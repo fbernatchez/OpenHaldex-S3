@@ -425,22 +425,34 @@ This project is pinned to known-good PlatformIO and ESP32 Arduino package versio
 
 1. Install VS Code and PlatformIO IDE.
 2. Open this folder as a PlatformIO project.
-3. Build:
+3. Build for your board variant:
 
    ```powershell
+   # Standard LilyGo T-2CAN (MCP2515):
    platformio run -e lilygo-t2can-s3
+
+   # LilyGo T-2CAN-FD (MCP2518FD):
+   platformio run -e lilygo-t2can-fd-s3
    ```
 
-4. Upload firmware, replacing `COM#` with the LilyGo serial port:
+4. Upload firmware, replacing `COM#` with your serial port:
 
    ```powershell
+   # Standard T-2CAN:
    platformio run -e lilygo-t2can-s3 -t upload --upload-port COM#
+
+   # T-2CAN-FD:
+   platformio run -e lilygo-t2can-fd-s3 -t upload --upload-port COM#
    ```
 
-5. Upload LittleFS:
+5. Upload LittleFS (web assets):
 
    ```powershell
+   # Standard T-2CAN:
    platformio run -e lilygo-t2can-s3 -t uploadfs --upload-port COM#
+
+   # T-2CAN-FD:
+   platformio run -e lilygo-t2can-fd-s3 -t uploadfs --upload-port COM#
    ```
 
 Build configuration:
@@ -449,7 +461,9 @@ Build configuration:
 - Board: `esp32-s3-devkitc1-n16r8`
 - Flash: 16 MB
 - Filesystem: LittleFS
-- Main environment: `lilygo-t2can-s3`
+- Environments:
+  - `lilygo-t2can-s3` (Standard T-2CAN with MCP2515)
+  - `lilygo-t2can-fd-s3` (T-2CAN-FD with MCP2518FD)
 
 ## Project Layout
 

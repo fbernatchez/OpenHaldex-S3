@@ -4,3 +4,5 @@
 
 # UI development folder and can dump viewer
 data/ui-dev/
+
+compile_commands.json

@@ -14,6 +14,13 @@
 
 static std::mutex can_mcp_mutex;
 static MCP2515 can_mcp(MCP2515_CS, 10000000, &SPI);
+#elif OH_CAN_HALDEX_MCP2518FD
+#include <SPI.h>
+#include <mcp2518fd_can.h>
+#include <mutex>
+
+static std::mutex can_mcp_mutex;
+static mcp2518fd can_mcp(MCP2518_CS);
 #endif
 
 static uint32_t last_can_chs_tx_error_log_ms = 0;
@@ -110,6 +117,22 @@ bool haldex_can_send(const twai_message_t& msg, TickType_t timeout_ticks, bool g
     canviewCacheFrameTx(msg, 1, generated);
   }
   return ok;
+#elif OH_CAN_HALDEX_MCP2518FD
+  (void)timeout_ticks;
+  const uint8_t dlc = msg.data_length_code > 8 ? 8 : msg.data_length_code;
+  byte err;
+  {
+    std::lock_guard<std::mutex> lock(can_mcp_mutex);
+    err = can_mcp.sendMsgBuf(msg.identifier, msg.extd ? 1 : 0, msg.rtr ? 1 : 0, dlc, msg.data, true);
+  }
+  bool ok = (err == CAN_OK);
+  if (!ok && !can_rate_limited(last_can_hdx_tx_error_log_ms)) {
+    LOG_WARN("can", "HDX TX failed (MCP2518FD) id=0x%lX err=%d", (unsigned long)msg.identifier, (int)err);
+  }
+  if (ok) {
+    canviewCacheFrameTx(msg, 1, generated);
+  }
+  return ok;
 #else
   if (!can_bus_1()) {
     if (!can_rate_limited(last_can_hdx_tx_error_log_ms)) {
@@ -150,6 +173,24 @@ bool haldex_can_receive(twai_message_t& msg) {
   msg.data_length_code = frame.can_dlc;
   for (uint8_t i = 0; i < frame.can_dlc && i < 8; i++) {
     msg.data[i] = frame.data[i];
+  }
+  return true;
+#elif OH_CAN_HALDEX_MCP2518FD
+  {
+    std::lock_guard<std::mutex> lock(can_mcp_mutex);
+    if (CAN_MSGAVAIL != can_mcp.checkReceive()) {
+      return false;
+    }
+    unsigned long id = 0;
+    uint8_t len = 0;
+    byte res = can_mcp.readMsgBufID(&id, &len, msg.data);
+    if (res != CAN_OK && len == 0) {
+      return false;
+    }
+    msg.identifier = id;
+    msg.extd = can_mcp.isExtendedFrame() ? 1 : 0;
+    msg.rtr = can_mcp.isRemoteRequest() ? 1 : 0;
+    msg.data_length_code = len > 8 ? 8 : len;
   }
   return true;
 #else
@@ -195,6 +236,17 @@ static bool can_init_haldex_bus() {
   }
   DEBUG("CAN haldex (MCP2515) started");
   return true;
+#elif OH_CAN_HALDEX_MCP2518FD
+  std::lock_guard<std::mutex> lock(can_mcp_mutex);
+  can_mcp.setMode(CAN_CLASSIC_MODE);
+  SPI.begin(MCP2518_SCLK, MCP2518_MISO, MCP2518_MOSI, MCP2518_CS);
+  can_mcp.setSPI(&SPI);
+  if (can_mcp.begin(CAN20_500KBPS, MCP2518FD_40MHz) != CAN_OK) {
+    DEBUG("CAN haldex (MCP2518FD) begin failed");
+    return false;
+  }
+  DEBUG("CAN haldex (MCP2518FD) started");
+  return true;
 #else
   // Optional dual-TWAI fallback (non T-2CAN targets).
   return can_init_bus(1, CAN0_TX, CAN0_RX, &can_bus_1(), TWAI_MODE_NO_ACK);
@@ -205,6 +257,11 @@ void haldexCanSleep() {
 #if OH_CAN_HALDEX_MCP2515
   if (can1_ready) {
     (void)can_mcp.setSleepMode();
+  }
+  can1_ready = false;
+#elif OH_CAN_HALDEX_MCP2518FD
+  if (can1_ready) {
+    (void)can_mcp.sleep();
   }
   can1_ready = false;
 #else
@@ -221,6 +278,10 @@ void canDeinit() {
 #if OH_CAN_HALDEX_MCP2515
   if (had_haldex_bus) {
     (void)can_mcp.setSleepMode();
+  }
+#elif OH_CAN_HALDEX_MCP2518FD
+  if (had_haldex_bus) {
+    (void)can_mcp.sleep();
   }
 #else
   can_deinit_twai_bus(can_bus_1());
@@ -271,7 +332,7 @@ void canRecoverIfBusFailure() {
     if (can_bus_0()) {
       twai_initiate_recovery_v2(can_bus_0());
     }
-#if !OH_CAN_HALDEX_MCP2515
+#if !OH_CAN_HALDEX_MCP2515 && !OH_CAN_HALDEX_MCP2518FD
     if (can_bus_1()) {
       twai_initiate_recovery_v2(can_bus_1());
     }
