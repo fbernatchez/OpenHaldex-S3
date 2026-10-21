@@ -12,10 +12,6 @@
 #define OPENHALDEX_VERSION "dev"
 #endif
 
-#ifndef OH_UPDATE_URL
-#define OH_UPDATE_URL "https://openhaldex.dev/release/s3/version.json"
-#endif
-
 static portMUX_TYPE g_updateMux = portMUX_INITIALIZER_UNLOCKED;
 static String g_latest;
 static bool g_available = false;
@@ -213,7 +209,11 @@ static void performCheck() {
     if (!err) {
       String latest = doc["version"] | "";
       String releasePath = doc["releasePath"] | "";
+#if OH_BOARD_T2CAN_FD
+      String fwName = doc["firmware_fd"] | doc["firmware"] | "";
+#else
       String fwName = doc["firmware"] | "";
+#endif
       String fsName = doc["filesystem"] | "";
 
       String fwUrl = buildArtifactUrl(String(OH_UPDATE_URL), latest, releasePath, fwName);

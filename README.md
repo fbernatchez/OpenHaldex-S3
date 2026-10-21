@@ -410,12 +410,13 @@ Firmware installation is required once. After that, updates can be performed thr
 
 The OTA updater checks:
 
-`https://openhaldex.dev/release/s3/version.json`
+`https://raw.githubusercontent.com/fbernatchez/OpenHaldex-S3/main/version.json`
 
-The latest metadata points to versioned release assets such as:
+The metadata points to versioned release assets for each board:
 
-- `https://openhaldex.dev/release/s3/v1.1/firmware.bin`
-- `https://openhaldex.dev/release/s3/v1.1/littlefs.bin`
+- Standard T-2CAN: `firmware.bin`
+- T-2CAN-FD: `firmware_fd.bin`
+- Web UI filesystem: `littlefs.bin`
 
 OTA can update both firmware and LittleFS when release assets are available.
 

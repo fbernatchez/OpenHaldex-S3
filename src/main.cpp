@@ -23,7 +23,7 @@ static AsyncWebServer server(80);
 static const char* AP_SSID = "OpenHaldex-S3";
 static const char* MDNS_NAME = "openhaldex";
 static const uint32_t WIFI_STA_RETRY_MS = 10000;
-static const char* OTA_VERSION_URL = "https://openhaldex.dev/release/s3/version.json";
+static const char* OTA_VERSION_URL = OH_UPDATE_URL;
 static volatile bool g_internet_ok = false;
 static DNSServer g_ap_dns;
 static bool g_ap_dns_running = false;

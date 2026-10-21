@@ -1,6 +1,7 @@
 {
   "version": "v1.1",
-  "notes": "OpenHaldex-S3 v1.1 adds Gen 5 parked sleep power saving",
+  "notes": "OpenHaldex-S3 with LilyGo T-2CAN & T-2CAN-FD support",
   "firmware": "firmware.bin",
+  "firmware_fd": "firmware_fd.bin",
   "filesystem": "littlefs.bin"
 }

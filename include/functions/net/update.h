@@ -2,6 +2,10 @@
 
 #include <Arduino.h>
 
+#ifndef OH_UPDATE_URL
+#define OH_UPDATE_URL "https://raw.githubusercontent.com/fbernatchez/OpenHaldex-S3/main/version.json"
+#endif
+
 struct UpdateInfo {
   String current;
   String latest;
